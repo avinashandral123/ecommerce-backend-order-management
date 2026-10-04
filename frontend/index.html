@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>E-Commerce Store</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>Welcome to My E-Commerce Store</h1>
+    <p>Cart: <span id="cart-count">0</span></p>
+    <p>Cart Total: ₹<span id="cart-total">0</span></p>
+    <p>Cart Item: <span id="cart-item">No items</span></p>
+    <h2>Order History</h2>
+    <p>Total Orders: <span id="total-orders">0</span></p>
+    <p>Total Sales: ₹<span id="total-sales">0</span></p>
+
+<div class="order-header">
+    <span>Order ID</span>
+    <span>Product</span>
+    <span>Quantity</span>
+    <span>Total</span>
+</div>
+
+<div id="order-history"></div>
+    <button onclick="addToCart()">Add to Cart</button>
+    <button onclick="buyProduct()">Buy Now</button>
+</div>
+
+    <button onclick="clearCart()">Clear Cart</button>
+    <button onclick="placeOrder()">Place Order</button>
+    <div class="product-card">
+    <img src="images/Laptop.jpg" alt="Dell Laptop">
+
+<h2 id="product-name">Loading product...</h2>
+<p>Price: ₹<span id="product-price">0</span></p>
+<p>Stock: <span id="product-stock">0</span></p>
+        <p>
+    Quantity:
+    <input type="number" id="quantity" value="1" min="1">
+</p>
+
+    <script>
+    let cartCount = 0;
+    let cartTotal = 0;
+    function addToCart() {
+    const quantity = parseInt(document.getElementById("quantity").value);
+    const stock = parseInt(document.getElementById("product-stock").textContent);
+
+    if (quantity <= 0 || isNaN(quantity)) {
+        alert("Please enter a valid quantity!");
+        return;
+    }
+
+    if (stock <= 0) {
+        alert("Product is out of stock!");
+        return;
+    }
+
+    if (quantity > stock) {
+        alert("Not enough stock!");
+        return;
+    }
+
+    const productName = document.getElementById("product-name").textContent;
+    const price = parseFloat(document.getElementById("product-price").textContent);
+
+    cartCount = cartCount + quantity;
+    cartTotal = cartTotal + (price * quantity);
+
+    document.getElementById("cart-item").textContent =
+        productName + " × " + cartCount;
+
+    document.getElementById("cart-count").textContent = cartCount;
+    document.getElementById("cart-total").textContent = cartTotal;
+
+    alert("Product added to cart!");
+}
+
+
+    async function loadProduct() {
+        const response = await fetch("http://127.0.0.1:8000/products");
+        const products = await response.json();
+        console.log(products);
+
+
+        const product = products[0];
+
+        document.getElementById("product-name").textContent = product.name;
+        document.getElementById("product-price").textContent = product.price;
+        document.getElementById("product-stock").textContent = product.stock;
+    }
+    async function loadOrders() {
+    const response = await fetch("http://127.0.0.1:8000/orders");
+    const orders = await response.json();
+
+    const orderHistory = document.getElementById("order-history");
+    document.getElementById("total-orders").textContent = orders.length;
+    let totalSales = 0;
+
+orders.forEach(order => {
+    totalSales = totalSales + order.total_price;
+});
+
+document.getElementById("total-sales").textContent = totalSales;
+
+    if (orders.length === 0) {
+        orderHistory.textContent = "No orders found.";
+        return;
+    }
+    for (const order of orders) {
+    const productResponse = await fetch(
+        `http://127.0.0.1:8000/products/${order.product_id}`
+    );
+
+    const product = await productResponse.json();
+
+    orderHistory.innerHTML += `
+    <p>
+        Order ID: ${order.id} |
+        Product: ${product.name} |
+        Quantity: ${order.quantity} |
+        Total: ₹${order.total_price}
+    </p>
+    `;
+    }
+    }
+    async function buyProduct() {
+    const stock = parseInt(document.getElementById("product-stock").textContent);
+    const quantity = parseInt(document.getElementById("quantity").value);
+
+    if (quantity <= 0 || isNaN(quantity)) {
+        alert("Please enter a valid quantity!");
+        return;
+    }
+
+    if (stock <= 0) {
+        alert("Product is out of stock!");
+        return;
+    }
+
+    if (quantity > stock) {
+        alert("Not enough stock!");
+        return;
+    }
+
+    const response = await fetch("http://127.0.0.1:8000/orders", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            customer_id: 2,
+            product_id: 1,
+            quantity: quantity
+        })
+    });
+
+    const order = await response.json();
+
+    if (!response.ok) {
+        alert(order.detail || "Order failed");
+        return;
+    }
+
+    alert("Order placed successfully!");
+
+    await loadProduct();
+    await loadOrders();
+
+    }
+function clearCart() {
+    cartCount = 0;
+    cartTotal = 0;
+
+    document.getElementById("cart-count").textContent = cartCount;
+    document.getElementById("cart-total").textContent = cartTotal;
+    document.getElementById("cart-item").textContent = "no items";
+
+
+    }
+    async function placeOrder() {
+    if (cartCount <= 0) {
+        alert("Your cart is empty!");
+        return;
+    }
+
+    const response = await fetch("http://127.0.0.1:8000/orders", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            customer_id: 2,
+            product_id: 1,
+            quantity: cartCount
+        })
+    });
+
+    const order = await response.json();
+
+    if (!response.ok) {
+        alert(order.detail || "Order failed!");
+        return;
+    }
+
+    alert("Order placed successfully!");
+
+    cartCount = 0;
+    cartTotal = 0;
+
+    document.getElementById("cart-count").textContent = cartCount;
+    document.getElementById("cart-total").textContent = cartTotal;
+    document.getElementById("cart-item").textContent = "no items";
+
+
+    await loadProduct();
+}
+
+    loadProduct();
+    loadOrders();
+</script>
+
+
+</div>
+
+
+
+</body>
+</html>
+
+
